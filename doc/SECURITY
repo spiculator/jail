@@ -1,0 +1,20 @@
+SECURITY GUIDE
+----------------------------------------------
+
+	Chroot is an approach to get a more secure environment,
+	preventing the users to access other directories outside
+	the chrooted environment. 
+
+
+
+PROCESES
+-----------------------------------------------
+
+ 	A note about proc filesystem. Mounting proc filesystems
+	under a chrooted environment is a security hole, because
+	you can access the non chrooted environment just cding
+	to the /proc/1/root directory. So by this reason, Jail
+	doesn't mount a proc filesystem, so the users under 
+	the chroot environment can't access to the process list
+	neither to the information under a proc filesystem
+	

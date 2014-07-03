@@ -1,0 +1,48 @@
+# ----------------------------------------------------------------------------
+#
+# freeBSD definitions
+#
+# $Id: definitions,v 1.1.1.1 2001/10/26 09:36:09 assman Exp $
+#
+# $Log: definitions,v $
+# Revision 1.1.1.1  2001/10/26 09:36:09  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# ----------------------------------------------------------------------------
+
+@PASSWD_USERS = ( "root", "daemon", "bin", "kmem", "tty", "man", "nobody" );
+@GROUP_USERS =  ( "wheel", "daemon", "kmem", "sys", "tty", "bin", "man", "staff", 
+		  "nogroup", "nobody" );
+
+@DEVICE_FILES = ( "/dev/zero", "/dev/null", "/dev/urandom" );
+
+#
+# load the command lookup table
+#
+
+@PRG_ALIAS = ();
+
+$PRG_ALIAS{"ls"}       = { 'name' => "/bin/ls", 'args' => '-lan' };
+$PRG_ALIAS{"strace"}   = { 'name' => "/usr/bin/truss", 'args' => '' };
+$PRG_ALIAS{"file"}     = { 'name' => "/usr/bin/file", 'args' => '' };
+$PRG_ALIAS{"whereis"}  = { 'name' => "/usr/bin/whereis", 'args' => '' };
+$PRG_ALIAS{"ldd"}      = { 'name' => "/usr/bin/ldd", 'args' => '' };
+$PRG_ALIAS{"mknod"}    = { 'name' => "/sbin/mknod", 'args' => '' };
+$PRG_ALIAS{"pwd_mkdb"} = { 'name' => "/usr/sbin/pwd_mkdb", 'args' => '' };
+
+
+$PASSWD_FILE = "/etc/master.passwd";
+
+#
+# load the standard programs table
+# (add custom plataform programs here)
+#
+
+#$PROGRAM_LIST{'sh'} = "";
+
+1;

@@ -1,0 +1,90 @@
+# -----------------------------------------------------------------------------
+#
+# generic definitions
+#
+# $Id: definitions,v 1.1.1.1 2001/10/26 09:36:09 assman Exp $
+#
+# $Log: definitions,v $
+# Revision 1.1.1.1  2001/10/26 09:36:09  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# -----------------------------------------------------------------------------
+
+#
+# create a architecture table lookup (directories)
+#
+
+@ARCH_DIR_LOOKUP= ();
+
+$ARCH_DIR_LOOKUP{'__LINUX__'}        = "linux";
+$ARCH_DIR_LOOKUP{'__SOLARIS__'}      = "solaris";
+$ARCH_DIR_LOOKUP{'__FREEBSD__'}      = "freebsd";
+$ARCH_DIR_LOOKUP{'__IRIX__'}         = "irix";
+
+#
+# some file permissions
+#
+
+$CREATE_DIR_MASK = 0755;
+$COPY_FILE_MASK  = 0755;
+$TMP_DIR_MASK    = 04777;
+
+#
+# some generic arrays
+#
+
+@GENERIC_DIRECTORIES = ();
+@PASSWD_USERS = ();
+@GROUP_USERS = ();
+@DEVICE_FILES = ();
+@TMP_DIRECTORIES = ();
+@DONT_OVERWRITE = ();
+
+@TMP_DIRECTORIES     = ( "/tmp", "/var/tmp" );
+@GENERIC_DIRECTORIES = ( "/dev", "/etc" );
+@DONT_OVERWRITE      = ( "/etc/passwd", "/etc/group" );
+
+#
+# system password & group files
+#
+
+$PASSWD_FILE = "/etc/passwd";
+$GROUP_FILE  = "/etc/group";
+$SHELLS_FILE  = "/etc/shells";
+#
+# program aliases, and program list tables
+#
+
+@PRG_ALIAS    = ();
+@PROGRAM_LIST = ();
+
+#
+# load the standard programs table
+#
+
+$PROGRAM_LIST{'sh'} = "";
+$PROGRAM_LIST{'cat'} = "";
+$PROGRAM_LIST{'grep'} = "";
+$PROGRAM_LIST{'id'} = "";
+$PROGRAM_LIST{'ls'} = "";
+$PROGRAM_LIST{'mkdir'} = "";
+$PROGRAM_LIST{'rmdir'} = "";
+$PROGRAM_LIST{'mv'} = "";
+$PROGRAM_LIST{'cp'} = "";
+$PROGRAM_LIST{'ln'} = "";
+$PROGRAM_LIST{'pwd'} = "";
+$PROGRAM_LIST{'rm'} = "";
+$PROGRAM_LIST{'rmdir'} = "";
+$PROGRAM_LIST{'tail'} = "";
+$PROGRAM_LIST{'more'} = "";
+$PROGRAM_LIST{'touch'} = "";
+$PROGRAM_LIST{'vi'} = "-c q";
+$PROGRAM_LIST{'head'} = "";
+
+
+1;

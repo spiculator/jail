@@ -1,0 +1,52 @@
+# ----------------------------------------------------------------------------
+#
+# Linux definitions
+#
+# $Id: definitions,v 1.1.1.1 2001/10/26 09:36:09 assman Exp $
+#
+# $Log: definitions,v $
+# Revision 1.1.1.1  2001/10/26 09:36:09  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# ----------------------------------------------------------------------------
+
+$SHADOW_FILE_MASK = 0640;
+
+@PASSWD_USERS = ( "root", "daemon", "bin", "sys", "man", "nobody" );
+@GROUP_USERS =  ( "root", "daemon", "bin",     "sys",   "adm", "tty",
+		  "disk", "kmem",   "dialout", "cdrom", "floppy",
+		  "tape", "audio",  "users",   "nogroup"  );
+
+@DEVICE_FILES = ( "/dev/zero", "/dev/null", "/dev/urandom" );
+
+@DONT_OVERWRITE = ( "/etc/passwd", "/etc/group", "/etc/shadow" );
+
+#
+# load the command lookup table
+#
+
+@PRG_ALIAS = ();
+
+$PRG_ALIAS{"ls"}       = { 'name' => "/bin/ls", 'args' => '-lan' };
+$PRG_ALIAS{"strace"}   = { 'name' => "/usr/bin/strace", 'args' => '' };
+$PRG_ALIAS{"file"}     = { 'name' => "/usr/bin/file", 'args' => '' };
+$PRG_ALIAS{"whereis"}  = { 'name' => "/usr/bin/whereis", 'args' => '' };
+$PRG_ALIAS{"ldd"}      = { 'name' => "/usr/bin/ldd", 'args' => '' };
+$PRG_ALIAS{"mknod"}    = { 'name' => "/bin/mknod", 'args' => '' };
+
+$SHADOW_FILE = "/etc/shadow";
+
+#
+# load the standard programs table
+# (add custom plataform programs here)
+#
+
+#$PROGRAM_LIST{'sh'} = "";
+
+1;
+

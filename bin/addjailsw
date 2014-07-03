@@ -1,0 +1,196 @@
+#!__PERL__ -w
+# -----------------------------------------------------------------------------
+#
+# addjailsw.pl
+# Add software to the Chrooted environment
+# A member of Jail Chroot Project.
+# Released under GPL license version 2.0 
+# 
+# Juan M. Casillas
+# assman@gsyc.inf.uc3m.es
+#
+# This script creates the required files and directories in the chrooted
+# environment, and add the software.
+#
+# $Id: addjailsw,v 1.1.1.1 2001/10/26 09:36:08 assman Exp $
+#
+# $Log: addjailsw,v $
+# Revision 1.1.1.1  2001/10/26 09:36:08  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# -----------------------------------------------------------------------------
+
+#
+# insert fullpath here so the modules can be fully loaded
+#
+
+use lib '__INSTALLDIR__/lib';
+
+use libjail;
+
+#
+# generate program dependencies
+#
+
+@FILE_DEP    = ();
+@DEVICE_DEP  = ();
+
+$INSTALL_PROGRAM = 0;
+$INSTALL_PROGRAM_ARGS = 0;
+
+# -----------------------------------------------------------------------------
+#
+# show_usage()
+# show basic usage
+#
+# -----------------------------------------------------------------------------
+
+sub show_usage {
+  
+  local ($prg_name) = @_;
+ 
+  show_credits($prg_name);
+  print("usage: $prg_name chrootdir [-P program args] when:\n\n");
+  
+  print("chrootdir   is the directory to chroot where the software is\n");
+  print("            going to be installed\n");
+  print("-P          choose to install a given program\n");
+  print("   program  program name\n");
+  print("   args     command arguments to be passed to the program\n");
+  print("            where running the strace (to keep it form get the\n");
+  print("            tty an not exit)\n\n");
+
+}
+
+
+
+# -----------------------------------------------------------------------------
+#
+# finish_install()
+# this function cleans and change the permissions to the right directories
+#
+# -----------------------------------------------------------------------------
+
+sub finish_install {
+ local ($basedir) = @_;
+
+ for $i (@TMP_DIRECTORIES) {
+
+   if (-e "${basedir}$i") {
+     rmtree("${basedir}${i}");
+   }
+   mkdir_recursive("${basedir}${i}",$CREATE_DIR_MASK);
+   chmod($TMP_DIR_MASK,"${basedir}${i}");   
+ }
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# main loop
+#
+# -----------------------------------------------------------------------------
+
+if ( $#ARGV + 1 <  1 ) {
+  show_usage($0);
+  exit(0);
+}
+
+#
+# parse command switches
+#
+
+$chroot_dir = $ARGV[0];
+
+for ($n=1; $n < $#ARGV + 1; $n++) {
+  
+  if ($ARGV[$n] eq "-P") {
+    if ($n + 1 < $#ARGV + 1) {
+      $INSTALL_PROGRAM = $ARGV[$n+1];
+      $n++;
+    }
+    else {
+      show_usage();
+      exit(0);
+    }
+    if ($n + 1 < $#ARGV + 1) {
+      $INSTALL_PROGRAM_ARGS = $ARGV[$n+1];
+      $n++;
+    }
+  }
+  
+}
+
+#
+# generate directory & file dependencies
+# if we want to install some program, only do that, else
+# install the factory default programs
+#
+
+show_credits($0);
+
+#
+# if install program, clear the array and set the values
+# of this program inside it, else, add the required files
+# into the array
+#
+
+if ($INSTALL_PROGRAM) {
+  %PROGRAM_LIST = ();
+  $PROGRAM_LIST{$INSTALL_PROGRAM} = $INSTALL_PROGRAM_ARGS;
+}
+else {
+  local (@a_vals0) = add_required_files(@FILE_DEP,@DEVICE_DEP);
+  if (!@a_vals0) {
+    print "Can't build required dependency files\n";
+    exit;
+  }
+  @FILE_DEP    = insert_only_new(@{$a_vals0[0]},@FILE_DEP);
+  @DEVICE_DEP  = insert_only_new(@{$a_vals0[1]},@DEVICE_DEP);
+}
+
+foreach $i (keys %PROGRAM_LIST) {
+  print "Guessing ".$i." args(".$PROGRAM_LIST{$i}.")\n";
+  $path = locate_file($i);
+  
+  if ($path) {
+    local (@a_vals) = generate_dep($path,$PROGRAM_LIST{$i});
+    
+    if (!@a_vals) {
+      print "Can't build dependencies for $path\n";
+    }
+    else {
+      @FILE_DEP    = insert_only_new(@{$a_vals[0]},@FILE_DEP);
+      @DEVICE_DEP  = insert_only_new(@{$a_vals[1]},@DEVICE_DEP);
+    }
+  }
+  else {
+    print("Warning: can't locate $i\n");
+  }
+}
+
+#
+# copy the files into the right places
+#
+
+foreach $i (@FILE_DEP) {
+  
+  $DEBUG && print("Creating ${chroot_dir}${i}\n");
+  copy_and_create($i,$chroot_dir);
+}
+
+foreach $i (@DEVICE_DEP) {
+  
+  $DEBUG && print("Creating ${chroot_dir}${i}\n");
+  special_devices($chroot_dir,$i);
+
+}
+
+finish_install($chroot_dir);
+
+print("\nDone.\n\n");

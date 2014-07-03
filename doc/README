@@ -1,0 +1,65 @@
+Jail v1.9
+A kick and dirty chrooted login shell implementation
+Released under GNU Public License v 2.0
+
+Juan M. Casillas <assman@gsyc.inf.uc3m.es>
+
+
+INTRODUCTION
+
+	jail is a chrooted environment using bash.
+	its main use is to put it as shell for any user you
+	want to be chrooted. To work propertly, you have to
+	copy some libraries into the chrooted environment, so
+	the user have some commands to work :) The environment
+	is built using the script 'mkenv.sh' provided in this
+	distribution
+
+	In this version, Jail now supports Linux, Solaris, FreeBSD and
+	IRIX platform; a new modular design has been applied to the 
+	perl scripts, so porting jail to another platform should be 
+	an easy task. Also all the options can be setup from the 
+	Makefile. A debug layer has been implemented, so if you
+	experience some problems, you can activate the debug and 
+	create full traces, so I can debug your problem.
+
+	All the scripts have been rewritten, now the vast majority of
+	the bugs have been fixed, the dependencies for the programs
+	run faster, and overall, all runs better.
+
+INSTALLATION
+
+	See the INSTALL file for details
+
+BUGS
+
+	FIXED: Under IRIX 6.5, the process being killed by itself. After a while
+	tracing it, I discover in google that there is a bug in the
+	execve() system call.
+
+RELEASE
+
+	This version is 1.9 release. Currently pretty stable.
+	The developement was done under a Linux box using debian potato 2.2
+	and gcc 2.95.3. 
+
+
+WARNING
+
+	This version has been tested under linux, solaris, freebsd and irix,
+	so if you change your platform, you have to change the scripts and/or
+	the c source so the right libraries and files will be copied. 
+        If you setup mkenv.sh for another platform, please send it to me, 
+	so I put it into the package.
+
+FEEDBACK
+
+	Please feedback all questions, bugs, enhancenments and so on to
+	assman@gsyc.inf.uc3m.es. Please check the Web Site 
+	(http://www.gsyc.inf.uc3m.es/~assman/jail/) for upgrades and more
+	info !
+
+Enjoy it.
+
+- Juan M. Casillas
+

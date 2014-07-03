@@ -1,0 +1,107 @@
+#!__PERL__ -w
+# -----------------------------------------------------------------------------
+#
+# mkenv.pl
+# generate chroot & user environment
+# A member of Jail Chroot Project.
+# Released under GPL license version 2.0 
+# 
+# Juan M. Casillas
+# assman@gsyc.inf.uc3m.es
+#
+# This script generates the chroot environment and the home directory of 
+# the chrooted user. This release has been ported to perl to be
+# platform indepent, extensible and highly configurable.
+#
+# $Id: mkjailenv,v 1.1.1.1 2001/10/26 09:36:08 assman Exp $
+#
+# $Log: mkjailenv,v $
+# Revision 1.1.1.1  2001/10/26 09:36:08  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# -----------------------------------------------------------------------------
+
+#
+# insert fullpath here so the modules can be fully loaded
+#
+
+use lib '__INSTALLDIR__/lib';
+
+use libjail;
+
+
+
+# -----------------------------------------------------------------------------
+#
+# show_usage()
+# show basic usage
+#
+# -----------------------------------------------------------------------------
+
+sub show_usage {
+  
+  local $prg_name = $_[0];
+ 
+  show_credits($prg_name);
+  print("usage: $prg_name chrootdir when:\n\n");
+  print("\tchrootdir\tis the directory to chroot\n\n");
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# PREINSTALL
+# this function generates the STANDARD_DIRECTORIES directories
+# under the chrooted environment. 
+#
+# -----------------------------------------------------------------------------
+
+sub preinstall {
+  local $basedir = $_[0];
+
+  foreach $i (@GENERIC_DIRECTORIES) {
+    mkdir_recursive("${basedir}${i}",$CREATE_DIR_MASK);
+  }
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# main loop
+#
+# -----------------------------------------------------------------------------
+
+
+if ( $#ARGV + 1 <  1 ) {
+  show_usage($0);
+  exit(0);
+}
+
+$d_dir = $ARGV[0];
+
+show_credits($0);
+print "Making chrooted environment into $d_dir\n";
+
+print "\tDoing preinstall()\n";
+preinstall($d_dir);
+
+print "\tDoing special_devices()\n";
+
+for $i (@DEVICE_FILES) {
+  special_devices($d_dir,$i);
+}
+
+print "\tDoing gen_template_password()\n";
+gen_template_password($d_dir);
+
+print "\tDoing postinstall()\n";
+add_jail_to_shells($d_dir);
+
+print "Done.\n\n";
+
+exit(1);

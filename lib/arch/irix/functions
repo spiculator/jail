@@ -1,0 +1,45 @@
+# ----------------------------------------------------------------------------
+#
+# IRIX functions
+#
+# $Id: functions,v 1.1.1.1 2001/10/26 09:36:09 assman Exp $
+#
+# $Log: functions,v $
+# Revision 1.1.1.1  2001/10/26 09:36:09  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# ----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+#
+# extract_open_from_ldd($line);
+# extract open calls from the output of ldd
+#
+# -----------------------------------------------------------------------------
+
+undef &extract_open_from_ldd;
+
+*extract_open_from_ldd = \&extract_open_from_ldd_irix;
+
+sub extract_open_from_ldd_irix {
+  local ($line) = @_;
+
+  local $file;
+  local $val;
+
+  if ($line =~ /\s:\sopen\(\"(.+)\".+\)\s*=\s*([-]?\d+)/)  {
+    $file = $1;
+    $val = $2;
+    return($file,$val);
+  }
+  return();
+}
+
+
+1;
+

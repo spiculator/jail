@@ -1,0 +1,278 @@
+Jail v1.9
+A kick and dirty chrooted login implementation
+Released under GNU Public License v 2.0
+
+Juan M. Casillas <assman@gsyc.inf.uc3m.es>
+
+INSTALL INSTRUCTIONS
+
+INDEX
+ 
+  1 Compiling and installing
+  2 Creating the chrooted environment
+  3 Adding users into the chrooted environment
+  4 Troubleshooting
+  5 Porting, improvements and hacks
+  6 Copyright
+
+     1 	Compiling and installing ---------------------------------------------
+
+	Just untar the package, cd to ./src and edit the makefile and do a 'make'. 
+	Now you can choose your architecture from Linux, FreeBSD,
+	Solaris and IRIX. then configure the installation directory
+	(default /usr/local) and you're ready !.
+
+	Perhaps you need to tune some of the compiler directives, if you are in a
+	different platform than these ones supported by Jail. After a while, 
+	you will have the jail binary created. Then, issue a 'make install',
+	to do this, you have to be root (the default path to 
+	install is /usr/local). Now you are ready to play with
+	jail.
+	
+
+     2	Creating the chrooted environment ------------------------------------
+
+	Now choose where directory will be your chroot environment.
+	In my example, I choose /var/chroot for	the chrooted 
+	environment. Now become root, and launch the mkjailenv command:
+
+		/usr/local/bin/mkjailenv /var/chroot
+
+	The output should look like this:
+
+                mkjailenv
+                A component of Jail
+                http://www.gsyc.inf.uc3m.es/~assman/jail/
+                Juan M. Casillas <assman.inf.uc3m.es>
+
+                Making chrooted environment into /var/chroot
+                        Doing preinstall()
+                        Doing special_devices()
+                        Doing gen_template_password()
+                        Doing postinstall()
+                Done.
+
+	After that, you will have the basic chrooted environment
+        installed under /var/chroot.
+
+     3  Adding software into the chrooted environment ------------------------
+
+        After the chrooted environment has been created, we have to
+        add some software inside it. To do this, we will use
+        addjailsw. This scripts, if called without -P argument,
+        will install a default set of programs into the chrooted
+        environment. First of all, were are going to install the
+        basic set of programs, an then we will install the less
+        command.
+
+        To install the basic set of programs, we will issue the
+        following command:
+
+			/usr/local/bin/addjailsw /var/chroot
+
+	The output of the program should look like this:
+
+                addjailsw
+                A component of Jail
+                http://www.gsyc.inf.uc3m.es/~assman/jail/
+                Juan M. Casillas <assman.inf.uc3m.es>
+
+                Guessing head args()
+                Guessing bash args()
+                Guessing cat args()
+                Guessing pwd args()
+                Guessing ln args()
+                Guessing mkdir args()
+                Guessing rmdir args()
+                Guessing ls args()
+                Guessing sh args()
+                Guessing mv args()
+                Guessing rm args()
+                Guessing more args()
+                Guessing grep args()
+                Guessing vi args()
+                Guessing id args()
+                Guessing cp args()
+                Guessing tail args()
+                Guessing touch args()
+                creating /var/chroot//bin/ln
+                creating /var/chroot//etc/nsswitch.conf
+                creating /var/chroot//var/tmp/vi.recover/vi.wTrhwB
+                creating /var/chroot//etc/group
+                Warning: not allowed to overwrite /var/chroot/etc/group
+                creating /var/chroot//lib/libncurses.so.5
+                creating /var/chroot//bin/ls
+                creating /var/chroot//etc/mtab
+                creating /var/chroot//bin/mkdir
+                creating /var/chroot//bin/rmdir
+                creating /var/chroot//bin/bash
+                creating /var/chroot//bin/sh
+                creating /var/chroot//etc/passwd
+                Warning: not allowed to overwrite /var/chroot/etc/passwd
+                creating /var/chroot//tmp/vi.UrdLM7
+                creating /var/chroot//bin/mv
+                creating /var/chroot//etc/ld.so.cache
+                creating /var/chroot//etc/terminfo/x/xterm
+                creating /var/chroot//bin/rm
+                creating /var/chroot//usr/bin/vi
+                creating /var/chroot//lib/libdl.so.2
+                creating /var/chroot//usr/bin/id
+                creating /var/chroot//lib/ld-linux.so.2
+                creating /var/chroot//usr/bin/tail
+                creating /var/chroot//bin/cp
+                creating /var/chroot//lib/libc.so.6
+                creating /var/chroot//usr/bin/head
+                creating /var/chroot//bin/cat
+                creating /var/chroot//lib/libnsl.so.1
+                creating /var/chroot//bin/touch
+                creating /var/chroot//lib/libnss_compat.so.2
+                creating /var/chroot//bin/pwd
+                creating /var/chroot//bin/more
+                creating /var/chroot//bin/grep
+                creating /var/chroot//proc/meminfo
+                creating /var/chroot/null:c:1:3
+                creating /var/chroot/tty:c:5:0
+
+                Done.
+		
+        As you can see in the output there are some temporal files, and also,
+        there are some files that are begin overwritten, and other that are not
+        allowed to be overwritted. This files are the passwd, group and shadow
+        files of the chrooted environment. When the scripts ends, it cleans
+        all the temporal directories in the chrooted environment.
+
+        Now, we are going to install the 'awk' program into the chrooted environment.
+        We need to call the addjailsw script with the -P argument:
+
+		/usr/local/bin/addjailsw /var/chroot -P awk 
+
+	The output for the script will be something like this:
+
+                addjailsw
+                A component of Jail
+                http://www.gsyc.inf.uc3m.es/~assman/jail/
+                Juan M. Casillas <assman.inf.uc3m.es>
+
+                Guessing awk args(0)
+                creating /var/chroot//lib/libc.so.6
+                Warning: file /var/chroot/lib/libc.so.6 exists. Overwritting it
+                creating /var/chroot//usr/bin/awk
+                creating /var/chroot//etc/ld.so.cache
+                Warning: file /var/chroot/etc/ld.so.cache exists. Overwritting it
+                creating /var/chroot//lib/libm.so.6
+                creating /var/chroot//lib/ld-linux.so.2
+                Warning: file /var/chroot/lib/ld-linux.so.2 exists. Overwritting it
+
+                Done.
+
+
+	Now, you have awk installed into the chroot environment. You should
+        use this script to install all the software into the chrooted environment
+
+
+     4	Adding users into the chrooted environment ---------------------------
+
+	Now, it is time to add some users into the chroot environment.
+	First of all we need to have the users created in the system,
+	so you can add them by hand, or using adduser. For this
+	example, I will create a new user called chroottest with adduser
+	To do this:
+
+		/usr/local/bin/jail/addjailuser /var/chroot \
+		 /home/chroottest /bin/bash chroottest
+
+	After answer all the questions and set the user password, we are
+	ready to add this users to the chrooted environment. This 
+	program accepts some parameters:
+
+		1) the first parameter is the full path to the
+		   chrooted environment (in my example, is /var/chroot)
+	
+		2) the full path of the directory under the user will 
+		   live. This path will be created under the chrooted
+		   environment, and when the user logs into, it will
+		   see it as the full path. (e.g, in our example,
+		   /home/chroottest is the home directory. addjailuser
+		   will create /var/chroot/home/chrootest, and when
+		   the user logs into, he will see /home/chroottest.
+		   Because it lives under the chrooted environment,
+		   he will see a 'virtual' home directory).
+		   
+		3) The full path to the shell that the user will use.
+		   (e.g, I like to use bash, so I use the /bin/bash
+		   parameter. NOTE: if you want yo use some other
+		   shell (or program) you will need to add it to 
+		   the list of the installed programs (see section
+		   2 to see how to do that).
+
+		4) The name of the user, in my example, chroottest
+		   
+		After that, we are ready to launch the program
+		(always as root):
+
+		/usr/local/bin/addjailuser \
+			/var/chroot/ \
+			/home/chroottest \
+			/bin/bash 
+			chroottest	
+
+	The inverted slashes are to allow us insert carriage returns
+	because the line is too long to type it in a single shell
+	line. After launch the command, the output should look like
+	this:
+
+                addjailuser
+                A component of Jail
+                http://www.gsyc.inf.uc3m.es/~assman/jail/
+                Juan M. Casillas <assman.inf.uc3m.es>
+
+                Adding user pruebas in  chrooted environment /var/chroot
+                Done.
+
+		
+	That's all. You have the user added into the chrooted
+	environment. Now is time to try it:
+
+		su - chroottest
+
+	As you can see, you are in the new created chrooted
+	environment, Congratulations !
+
+
+     5	Troubleshooting ------------------------------------------------------
+
+	Well, there are not troubleshooting section :( Im writting some	
+	documentation, and improving the code for jail, mkjailenv,
+	addjailsw and addjailuser. Also we have a mailinglist with some of the
+	tricks and recipes to have jail working:
+
+	(http://www.gsyc.inf.uc3m.es/~assman/archived/jail/)
+
+	Also, you can generate some log files and send them back to me,
+	so I will try to manage them and find an answer for your problems.
+	I usually need a log for all the scripts and 
+	the output for a login session into a chrooted account. 
+
+
+     6  Porting, improvements and hacks --------------------------------------
+
+	If you tailor the scripts for your platform, please send me the new 
+	mkjailenv, so I can put it into the distribution, also, send me
+	patches if you write any of them for jail.
+
+
+     7  Copyright ------------------------------------------------------------
+
+	This program, the web site, all the documentation an the scripts has
+	been written by Juan M. Casillas <assman@gsyc.inf.uc3m.es>. All the
+	source code, web pages, documentation and scripts has been released
+	using the GNU Public License, version 2.0 or above (you can find the
+	complete GPL text in a file called GPL, in the root file of jail's
+	distribution). Also, this program has been done and improved thanks
+	to the help of lot of people arround the world. Thanks to all for
+	your work, your test-drives, and your improvements & ideas.
+
+	- Juan M. Casillas
+	  29 October, 2001.
+	  Madrid, Spain.
+

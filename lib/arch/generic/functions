@@ -1,0 +1,853 @@
+# -----------------------------------------------------------------------------
+#
+# generic functions
+#
+# $Id: functions,v 1.1.1.1 2001/10/26 09:36:09 assman Exp $
+#
+# $Log: functions,v $
+# Revision 1.1.1.1  2001/10/26 09:36:09  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# -----------------------------------------------------------------------------
+
+use File::Basename;
+use File::Copy;
+use File::Path;
+
+# -----------------------------------------------------------------------------
+#
+# show_credits()
+# show basic credits
+#
+# -----------------------------------------------------------------------------
+
+sub show_credits {
+  local ($name) = @_;
+  
+  $name = basename($name);
+  print("\n$name\n");
+  print("A component of Jail (version $VERSION for $ARCH_NAME)\n");
+  print("http://www.gsyc.inf.uc3m.es/~assman/jail/\n");
+  print("Juan M. Casillas <assman\@gsyc.inf.uc3m.es>\n\n");
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# get_entry_from_pass_file(file,uid)
+# get the entry for a passwd or shadow file
+#
+# -----------------------------------------------------------------------------
+
+sub get_entry_from_pass_file {
+  local ($filename,$uid) = @_;
+  local $entry;
+
+  open(PASS,$filename) || return();
+  while (<PASS>) {
+    #
+    # if matched, send it to the right file
+    #
+    if (/^$uid:/) {
+      $entry = $_;
+      last;
+    }
+  }
+
+close(PASS);
+return($entry);
+
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# get_entry_from_group_file(file,uid)
+# get the entry for a group
+#
+# -----------------------------------------------------------------------------
+
+sub get_entry_from_group_file {
+  local ($filename,$gid) = @_;
+  local $entry;
+
+  open(PASS,$filename) || return();
+  while (<PASS>) {
+    #
+    # if matched, send it to the right file
+    #
+    if (/^.+:.*:$gid/) {
+      $entry = $_;
+      last;
+    }
+  }
+
+close(PASS);
+return($entry);
+
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# zip_spaces(string)
+# compress all the spaces in a single one in a line
+#
+# -----------------------------------------------------------------------------
+
+sub zip_spaces {
+ local ($line) = @_;
+
+ $line =~ s/[\s]+/ /g;
+ return($line);
+}
+
+# -----------------------------------------------------------------------------
+#
+# add_line_to_file(file,line)
+# add line to the end of the file
+#
+# -----------------------------------------------------------------------------
+
+sub add_line_to_file {
+  local ($filen,$linev) = @_;
+
+  open(FILEH,">>".$filen) || return();
+  print FILEH $linev;
+  close(FILEH);
+  
+  return(1);
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# mkdir_recursive($destination_dir,$permissions)
+# create a directory recursively (works as mkdir -p)
+# SYSTEM INDEPENDENT
+#
+# -----------------------------------------------------------------------------
+
+sub mkdir_recursive {
+
+ local ($dst_dir,$perm) = @_;
+
+ local @tmp = split(//,$dst_dir);
+ local $createdir = "./";
+
+ if ($tmp[0] eq "/") {
+   $createdir = "/";
+ } 
+
+ foreach  $i (split(/\//,$dst_dir)) {
+
+   if ($i ne "") {
+     $createdir = $createdir.$i;
+     mkdir($createdir,$perm);
+     
+     $createdir = $createdir."/";
+   }
+ }
+
+ return(1);
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# build_cmd("command_string")
+# build a command, using the PRG_ALIAS array (must be defined before)
+# SYSTEM INDEPENDENT
+#
+# -----------------------------------------------------------------------------
+
+sub build_cmd {
+ local ($command) = @_;
+  
+ local $found = 0;
+ 
+ for $key (keys (%PRG_ALIAS)) {
+   if ($key eq $command) {
+     $found = 1;
+     last;
+   }
+ }
+ if (!$found) {
+   $DEBUG && print("command $command doesn't exist.\n");
+   return();
+ }
+
+ if (!-e $PRG_ALIAS{$command}->{name}) {
+   $DEBUG && print("command $command not found in filesystem.\n");
+   return();
+ }
+
+ $str = $PRG_ALIAS{$command}->{name}." ".$PRG_ALIAS{$command}->{args};
+ return($str);
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# get_device("path_to_device")
+# build a command, using the PRG_ALIAS array (must be defined before)
+# SYSTEM INDEPENDENT
+#
+# -----------------------------------------------------------------------------
+
+sub get_device {
+  local ($fname) = @_;
+
+  if (!-e $fname) {
+    $DEBUG && print("file $fname doesn't exist.\n");
+    return();
+  }
+
+  local $cmd = build_cmd("ls");
+  if (!$cmd) {
+    $DEBUG && print("can't build command ls.\n");
+    return();
+  }
+
+  local $query = "$cmd $fname";
+  local $res = `$query`;
+  
+  #
+  # if its a symlink, use the last element again,
+  # and build the path right, then extract the
+  # information from it. 
+  #
+
+
+  $res = zip_spaces($res);
+
+  local @elem = split(/\s/,$res);
+  local $symlink = $elem[$#elem];
+
+  if (-l $fname) {
+    local @elemdata = split(//,$symlink);
+
+    if ($elemdata[0] ne  "/") {
+      local $dir_name = dirname($fname);
+      $symlink = $dir_name."/".$symlink;
+    }
+   
+    $query = "$cmd $symlink";
+    $res = `$query`;
+    $res = zip_spaces($res);
+    @elem = split(/\s/,$res);
+  }
+
+  #
+  # here we have the right path to the symlink
+  # and the data stored into @elem; now, its platform
+  # dependant extract the info, so call the function
+  #
+  
+  local (@data) = extract_data_from_ls_output(@elem);
+
+  #print("$data[0]\n");
+  #print("$data[1]\n");
+  #print("$data[2]\n");
+  #print("$data[3]\n");
+  #print("$data[4]\n");
+  #print("$data[5]\n");
+
+
+  if (!@data) {
+    $DEBUG && print("can't extract data from $symlink.\n");
+    return();
+  }
+  return(@data);
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# get_perm_to_num(@perm_values)
+# convert the textual permissions to octal permissions
+# not support setuid, sticky bits, etc. only raw perm
+# SYSTEM INDEPENDENT
+#
+# -----------------------------------------------------------------------------
+
+
+sub get_perm_to_num {
+
+ local @data = @_;
+ local $permu = 0;
+ local $permg = 0;
+ local $permo = 0;
+
+ if ($data[1] =~ /[^-]/) { $permu = $permu | 04; } # r
+ if ($data[2] =~ /[^-]/) { $permu = $permu | 02; } # w
+ if ($data[3] =~ /[^-]/) { $permu = $permu | 01; } # x
+
+ if ($data[4] =~ /[^-]/) { $permg = $permg | 04; } # r
+ if ($data[5] =~ /[^-]/) { $permg = $permg | 02; } # w
+ if ($data[6] =~ /[^-]/) { $permg = $permg | 01; } # x
+
+ if ($data[7] =~ /[^-]/) { $permo = $permo | 04; } # r
+ if ($data[8] =~ /[^-]/) { $permo = $permo | 02; } # w
+ if ($data[9] =~ /[^-]/) { $permo = $permo | 01; } # x
+
+ local $cero = 0;
+ local $perm = $cero.$permu.$permg.$permo;
+
+ return($perm);
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# extract_data_from_ls_output($ls_output);
+# extract info based on the output (space separated) of the ls program
+# system dependent
+#
+# -----------------------------------------------------------------------------
+
+sub extract_data_from_ls_output {
+ local @data = @_;
+
+ local @tmp = split(//,$data[0]);
+ local $type = $tmp[0];  # block, character, etc
+ local $uid  = $data[2];
+ local $gid  = $data[3];
+ local $major = $data[4]; $major =~ s/([0-9]+),/$1/g;
+ local $minor = $data[5];
+
+ local $perm = get_perm_to_num(@tmp);
+
+ $DEBUG && print("type($type), perm($perm), uid($uid), gid($gid),".
+		 "major($major), minor($minor)\n");
+
+ local @ret = ($type, $perm, $uid, $gid, $major, $minor);
+ return(@ret);
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# locate_file(filename)
+# return a full path to the file, or false
+#
+# -----------------------------------------------------------------------------
+
+sub locate_file {
+  local ($fname) = @_;
+
+  local $whereis_cmd = build_cmd("whereis");
+  if (!$whereis_cmd) {
+    $DEBUG && print("can't build command whereis.\n");
+    return();
+  }
+
+  local $query = "$whereis_cmd $fname";
+  local $res = `$query`;
+
+  $res = zip_spaces($res);
+  local @res_a = split(/\s/,$res);
+
+  if ($res_a[1] eq "") {
+    $DEBUG && print("Can't find $fname with whereis (not in path?)\n");
+    return();
+  }
+
+  return($res_a[1]);
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# gen_template_password($base_dir)
+# this function generates the default template passwd, group and shadow
+# files under the chrooted environment
+#
+# -----------------------------------------------------------------------------
+
+sub gen_template_password {
+ local ($basedir) = @_;
+
+ local $pass_file = "${basedir}${PASSWD_FILE}";
+ local $grp_file = "$basedir/${GROUP_FILE}";
+ local $shw_file = "$basedir/${SHADOW_FILE}";
+
+ #
+ # Process Passwd File
+ #
+
+ open(PASS,$PASSWD_FILE) || die("Can't open $PASSWD_FILE: $!");
+ open(C_PASS,">".$pass_file) || die("Can't open $pass_file: $!");
+
+ while (<PASS>) {
+   foreach $i (@PASSWD_USERS) {
+     #
+     # if matched, send it to the right file
+     #
+     if (/^$i:/) {
+       print C_PASS $_;
+     }
+   }
+ }
+
+ close(PASS);
+ close(C_PASS);
+
+ #
+ # Process Shadow File
+ #
+
+ open(SHW,$SHADOW_FILE) || die("Can't open $SHADOW_FILE: $!");
+ open(C_SHW,">".$shw_file) || die("Can't open $shw_file: $!");
+
+ while (<SHW>) {
+   foreach $i (@PASSWD_USERS) {
+     #
+     # if matched, send it to the right file
+     #
+     if (/^$i:/) {
+       print C_SHW $_;
+     }
+   }
+ }
+
+ close(SHW);
+ close(C_SHW);
+
+ #
+ # now, change the permissions
+ #
+ chmod($SHADOW_FILE_MASK, $shw_file);
+
+ #
+ # Process group file
+ #
+
+ open(GRP,$GROUP_FILE) || die("Can't open $GROUP_FILE: $!");
+ open(C_GRP,">".$grp_file) || die("Can't open $grp_file: $!");
+
+ while (<GRP>) {
+   foreach $i (@GROUP_USERS) {
+     #
+     # if matched, send it to the right file
+     #
+     if (/^$i:/) {
+       print C_GRP $_;
+     }
+   }
+ }
+
+ close(GRP);
+ close(C_GRP);
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# special_devices($base_dir,$device_file)
+# create a device file
+#
+# -----------------------------------------------------------------------------
+
+sub special_devices {
+
+  local ($basedir,$device_file) = @_;
+  
+  local (@data) = get_device($device_file);
+  if (!@data) {
+    print("can't get info from $device_file.\n");
+    next;
+  }
+  else {
+    
+    local $cmd_mknod = build_cmd("mknod");
+    
+    if (!$cmd_mknod) {
+      $DEBUG && print("$cmd_mknod not found\n");
+      return();
+    }
+    
+    local $query="$cmd_mknod ${basedir}${device_file} ".
+      "$data[0] $data[4] $data[5]";
+    
+    $DEBUG && print("$query\n");
+    
+    `$query`;
+
+    $DEBUG && print("perm($data[1]), ${basedir}${device_file}\n");
+
+    chown($data[2],$data[3],${basedir}.${device_file});
+    chmod(oct $data[1],${basedir}.${device_file});
+  }
+  
+  return(1);
+}
+
+# -----------------------------------------------------------------------------
+#
+# gen_passwd_user(basedir,userid,userhome,usershell)
+# generate the user directory inside de chrooted environment
+#
+# -----------------------------------------------------------------------------
+
+sub gen_passwd_user {
+ local ($basedir,$userid,$userhome,$usershell) = @_;
+
+ local $pass_file = "${basedir}$PASSWD_FILE";
+ local $grp_file =  "${basedir}$GROUP_FILE";
+ local $shw_file =  "${basedir}$SHADOW_FILE";
+
+ #
+ # edit the passwd file
+ #
+
+ local $entry = get_entry_from_pass_file($PASSWD_FILE,$userid);
+ if (!$entry) {
+   $DEBUG && print("Can't found passwd info for user $userid\n");
+   return();
+ }
+
+ @values = split(/:/,$entry);
+
+ local $group_id = $values[3];
+
+ $values[5] = $userhome;
+ $values[6] = $usershell;
+
+ $user_uid = $values[2];
+ $user_gid = $values[3];
+ 
+ $entry2 = join(':',@values)."\n";
+
+ if (!add_line_to_file($pass_file,$entry2)) {
+   $DEBUG && print("Can't add password info to file $pass_file\n");
+   return();
+ }
+
+ #
+ # build the group file
+ #
+
+ $entry = get_entry_from_group_file($GROUP_FILE,$group_id);
+
+ if (!$entry) {
+   $DEBUG && print("Can't found group info for group $userid\n");
+   return();
+ }
+
+ if (!add_line_to_file($grp_file,$entry)) {
+   $DEBUG && print("Can't add group info to file $grp_file\n");
+   return();
+ }
+
+ #
+ # build the shadow file
+ #
+ 
+ $entry = get_entry_from_pass_file($SHADOW_FILE,$userid);
+ if (!$entry) {
+   $DEBUG && print("Can't found shadow info for user $userid\n");
+   return();
+ }
+
+ if (!add_line_to_file($shw_file,$entry)) {
+   $DEBUG && print("Can't add shadow info to file $shw_file\n");
+   return();
+ }
+
+ #
+ # generate home directory
+ # and change its permissions
+ #
+
+ if (!mkdir_recursive("$basedir/$userhome",$CREATE_DIR_MASK)) {
+   $DEBUG && print("Can't create directory $basedir/$userhome\n");
+   return();
+ }
+
+ if (!chown($user_uid, $user_gid, "$basedir/$userhome")) {
+   $DEBUG && print("Can't chown($user_uid,$user_gid) in $basedir/$userhome\n");
+   return();
+ }
+
+ return(1);
+}
+
+# -----------------------------------------------------------------------------
+#
+# copy_and_create()
+# copy a file prepending to the path $2 and build the directory if 
+# it doesn't exist It does some checks also to test the validity of
+# the path
+#
+# example:
+# copy_and_create("/etc/passwd",/tmp/chroot");
+# this will create /tmp/chroot/etc and then copy passwd in this file
+#
+# -----------------------------------------------------------------------------
+
+sub copy_and_create {
+
+  local ($fname,$path) = @_;
+  
+  local $base = dirname($fname);  
+  local $filen = basename($fname);
+  local $dst_dir = "${path}${base}";
+
+  #
+  # avoid /proc files
+  #
+
+  if ($fname =~ /^\/proc\/.+/) {
+    print("Warning: can't create $fname from the /proc filesystem\n");
+    return();
+  }
+
+  if (!-d $dst_dir ) {
+    if (!mkdir_recursive($dst_dir,$CREATE_DIR_MASK)) {
+      $DEBUG && print("Can't create $dst_dir\n");
+      return();
+    }
+  }
+
+  #
+  # copy the file but, don't allow to overwrite certain files
+  #
+
+  foreach $k (@DONT_OVERWRITE) {
+    if ($k eq $fname && -e "$dst_dir/$filen") {
+      print("Warning: not allowed to overwrite $dst_dir/$filen \n");
+      return();
+    }
+  }
+
+  if ( -e "$dst_dir/$filen") {
+    print "Warning: file $dst_dir/$filen exists. Overwritting it\n";
+  }
+
+  copy($fname,"$dst_dir/$filen");
+  chmod($COPY_FILE_MASK,"$dst_dir/$filen");
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# extract_open_from_ldd($line);
+# extract open calls from the output of ldd
+#
+# -----------------------------------------------------------------------------
+
+sub extract_open_from_ldd {
+  local ($line) = @_;
+
+  local $file;
+  local $val;
+  if ($line =~ /^open\(\"(.+)\".+\)\s*=\s*([-]?\d+)/) {
+    $file = $1;
+    $val = $2;
+    return($file,$val);
+  }
+  return();
+}
+
+# -----------------------------------------------------------------------------
+#
+# generate_dep($program, $program_args)
+# generate library and file dependences of a program, so we can 
+# insert it and the required libraries into the chrooted
+# environment
+#
+# depedens on ldd and strace
+#
+# -----------------------------------------------------------------------------
+
+sub generate_dep {
+  local ($p_name,$p_args) = @_;
+
+  #
+  # check if exists, and if it is dynamic or static
+  #
+
+  local @file_dep    = ();
+  local @device_dep  = ();
+
+  if (!-e $p_name) {
+    $DEBUG && print("Filename $p_name doesn't exist\n");
+    return();
+  }
+
+  local $file_cmd = build_cmd("file");
+  if (!$file_cmd) {
+    $DEBUG && print("Can't build command file.\n");
+    return();
+  }
+  
+  local $query = "$file_cmd $p_name";
+  local $res = `$query`;
+  local $line;
+
+  #
+  # if dynamic file
+  # then issue a ldd and get the library dependencies
+  #
+  
+  if ($res =~ /:(.+)dynamic/i ) {
+
+    local $ldd_cmd = build_cmd("ldd");
+    if (!$ldd_cmd) {
+      $DEBUG && print("Can't build command ldd.\n");
+      return();
+    }
+    
+    $query = "($ldd_cmd $p_name $p_args </dev/null 2>&1)";
+    local @res_a = `$query`;
+    
+    local @items = ();
+
+
+    foreach $line (@res_a) {
+      
+      if ($line =~ /(.+)=>(.+)/) {
+	local $b = zip_spaces($2);
+	local @tmp = split(/ /,$b);
+	$b = $tmp[1];
+	
+	unless ($items{$b}) {
+	  $items{$b} = 1 ;
+	  push(@file_dep,$b);
+	}
+      }
+    }
+
+  }
+
+  #
+  # generate file dependencies
+  #
+
+  local $strace_cmd = build_cmd("strace");
+  if (!$strace_cmd) {
+    $DEBUG && print("Can't build command strace.\n");
+    return();
+  }
+
+  $query = "($strace_cmd $p_name $p_args </dev/null 2>&1)";  
+  @res_a = `$query`;
+  
+  #
+  # process & extract data from the output
+  #
+
+  foreach $line (@res_a) {
+
+    local @lddvals = extract_open_from_ldd($line);
+    
+    if (!@lddvals) {
+      next;
+    }
+    
+    local $file = $lddvals[0];
+    local $val = $lddvals[1];
+    
+    #
+    # skip current and parent directory, and -1 (can't open files)
+    # 
+
+    if ($file =~ /^\..*/ || $val == -1) {
+    #if ($file eq "." || $file eq ".." || $file eq "./" || $val == -1) {
+      next;
+    }
+    else {
+      #
+      # if is special device, then add it to the list
+      # else, add to the file dependency array. Socket, pipes
+      # and so on aren't trapped, so maybe we need to fix it
+      # in a future
+      #
+      if (-c $file || -b $file) {
+	  push(@device_dep,$file);
+	}
+	else {
+	  push(@file_dep,$file);
+	}
+    }
+  }
+
+  # add the program to the list of dependencies to be copied
+
+  push(@file_dep,$p_name);
+  
+  return( \@file_dep, \@device_dep );
+}
+
+# -----------------------------------------------------------------------------
+#
+# insert_only_new()
+# this function insert only the new elements in an array 1 into arr2
+#
+# -----------------------------------------------------------------------------
+
+sub insert_only_new {
+  local (@arr1,@arr2) = @_;
+
+  local %items = %arr2;
+  
+  foreach $k (@arr1) {
+    unless ($items{$k}) {
+      $items{$k} = 1 ;
+      push(@arr2,$k);
+    }
+  }
+  return(@arr2);
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# add_jail_to_shells()
+# check for jail in the /etc/shells, if not found, add it inside it
+# 
+# -----------------------------------------------------------------------------
+
+sub add_jail_to_shells {
+  local ($basedir) = @_;
+  local $found = 0;
+
+  open(F,$SHELLS_FILE);
+  local @elem = <F>;
+  close(F);
+
+  for $k (@elem) {
+    if ($k =~ /^$INSTALL_DIR\/jail/) {
+      $found = 1;
+      last;
+    }
+  }
+
+  if (!$found || !-e $SHELLS_FILE) {
+    open(F,">>".$SHELLS_FILE);
+    print F "$INSTALL_DIR/jail\n";
+    close(F);
+  } 
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# add_required_files()
+# add the required files to the dependency arrays
+# 
+# -----------------------------------------------------------------------------
+
+sub add_required_files {
+  local (@filedep, @devicedep) = @_;
+  
+  return(\@filedep, \@devicedep);
+}
+
+1;

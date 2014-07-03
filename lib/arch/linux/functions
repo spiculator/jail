@@ -1,0 +1,19 @@
+# ----------------------------------------------------------------------------
+#
+# Linux functions
+#
+# $Id: functions,v 1.1.1.1 2001/10/26 09:36:09 assman Exp $
+#
+# $Log: functions,v $
+# Revision 1.1.1.1  2001/10/26 09:36:09  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# ----------------------------------------------------------------------------
+
+
+1;

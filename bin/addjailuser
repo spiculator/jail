@@ -1,0 +1,82 @@
+#!__PERL__ -w
+# -----------------------------------------------------------------------------
+#
+# addjailuser.pl
+# Add user to the Chrooted environment
+# A member of Jail Chroot Project.
+# Released under GPL license version 2.0 
+# 
+# Juan M. Casillas
+# assman@gsyc.inf.uc3m.es
+#
+# This script creates the required files and directories in the chrooted
+# environment, edit the passwd / group / shadow files, and change the
+# permissions for a given user
+#
+# $Id: addjailuser,v 1.1.1.1 2001/10/26 09:36:08 assman Exp $
+#
+# $Log: addjailuser,v $
+# Revision 1.1.1.1  2001/10/26 09:36:08  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# -----------------------------------------------------------------------------
+
+#
+# insert fullpath here so the modules can be fully loaded
+#
+
+use lib '__INSTALLDIR__/lib';
+
+use libjail;
+
+
+# -----------------------------------------------------------------------------
+#
+# show_usage()
+# show basic usage
+#
+# -----------------------------------------------------------------------------
+
+sub show_usage {
+  
+  local $prg_name = $_[0];
+ 
+show_credits($prg_name);
+print("usage: $prg_name chrootdir userdir usershell username when:\n\n");
+ 
+  print("chrootdir       is the directory to chroot (e.g. /tmp/chroot)\n");
+  print("userdir         is the user home directory in the chrooted\n");
+  print("                environment (e.g. /home/user1)\n");
+  print("usershell       is the full path to the users' shell\n");
+  print("                (e.g. /bin/bash)\n");
+  print("username        the username (e.g. user1)\n\n");
+
+}
+
+# -----------------------------------------------------------------------------
+#
+# main loop
+#
+# -----------------------------------------------------------------------------
+
+if ( $#ARGV + 1 <  4 ) {
+  show_usage($0);
+  exit(0);
+}
+
+$chroot_dir = $ARGV[0];
+$user_dir  = $ARGV[1];
+$user_shell = $ARGV[2];
+$user_name = $ARGV[3];
+
+show_credits($0);
+print "Adding user $user_name in chrooted environment $chroot_dir\n";
+if (!gen_passwd_user($chroot_dir,$user_name,$user_dir,$user_shell)) {
+  print("\tError: Can't add the user.\n");
+}
+print "Done.\n";

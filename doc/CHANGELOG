@@ -1,0 +1,119 @@
+----------
+CHANGELOG
+----------
+
+Current version: 1.9
+
+
+	VERSION HISTORY
+	-----------------------------------------------------------------------
+        1.9		Linux, Solaris, FreeBSD and IRIX platforms are fully
+			supported. The perl scripts have been redesigned, so
+			a new modular architecture has been adopted. Now, port
+			jail to another platform should be an easy task. The
+			scripts now do their work better, due the vast 
+			majority of the bugs have been fixed. A new debug 
+			layer has been added, an all the configuration options
+			can be setup from the Makefile, so install jail is
+			now quite easy. The mkenv.pl scripts have been renamed
+			to mkjailenv, and the other two (addjailuser, addjailsw)
+			have lost their extension (.pl).
+
+	1.8		Some improvements has been added to jail. Now it supports
+			arguments, so all the argument-based bugs has been fixed,
+			also, some programs that depends on this arguments now
+			works (ssh, scp). new terminal handling code has been
+			added, now jail builds automatically when started the 
+			required terminal (tty and pts/XX) device files, and 
+			setup their permissions and ownership.
+
+
+	1.7		Due an error, all the perl scripts have been tested
+			in version 1.6 without the -w flag, so they have lot
+			of bugs inside. This bugs has been corrected and fixed.
+			Another bug fixed is the argument-passing code to the
+			strace module, now the programs accept the parameters
+			(so the vim problem has been fixed and the script
+			addjailsw.pl shouldn't hang when guessing vi. Some
+			other minor bugs have been fixed.
+
+
+	1.6 		The mkenv.sh and addjailuser.sh has been fully 
+			rewritten in perl, so they should be more portable, 
+			and should fix some bugs that arises when the chroot 
+			environment is built. Also, a new application has been 
+			written, addjailsw.pl, that allows insert software 
+			into the chrooted environment. More flexibility has 
+			been archived due mkenv.pl does only the jailed 
+			environment. The software installation step is much 
+			more clear, and now you can pass arguments to the 
+			programs, so in the strace phase the programs can 
+			exit nicely, allowing strace do its work. Also,
+			in this version you can find some documentation 
+			improvements and examples.
+
+
+        1.5             Fixed a 'not group neither shadow entry bug' in 
+		        addjailuser.sh. This is a minor bug. The shadow
+			and group entries for the user now are inserted
+		 	right in the chrooted environment. 	
+
+        1.4             Removed a bug in jail.c that generates a segmentation
+			fault when jail is launched from the shell. Splitted
+			mkenv.sh in two programs; mkenv.sh now only builds
+			the chrooted environment. addjailuser.sh installs
+			new users into the chrooted environment. To install
+			a new user under the chrooted environment, this user
+			must be created in the system. See INSTALL for more
+			details.
+
+	1.3		Removed path splitting, due it is not necesary. Now
+			we choose the user directory and its shell from the
+			data stored into the /etc/passwd inside the chrooted
+			environment. Now the "no such file or directory" bug
+			has been removed. (the homedirs in the two passwd 
+			files have existing paths)
+
+			mkenv.sh has been fully rewritten, now support the
+			different platforms insde it. mkenv.sh supports 
+			guessing the right libraries for the files so you
+			don't need to know what libraries have to be copied
+			into the chrooted environment. Also, mkenv.sh protect
+			you for overwritting the customized files (/etc/passwd
+			/etc/group and /etc/shadow) so you can have multiple
+			users into  a single chrooted environment
+
+	-----------------------------------------------------------------------
+	1.2		Added a new feature, path splitting, so you can have
+			multiple users into a single chrooted environment
+			(useful for isolate groups of users) The use is simple
+			just use: /chroot_dir$/path_relative_to_it 
+	
+			Added ChangeLog
+	
+			Added a INSTALL file
+
+			Renamed the mkenv.sh for each platform
+
+			Changed the documentation (section INSTALL and mkenv.sh
+			usage)
+
+			Added a TODO file
+		
+			Added a Mkenv for redhat 6.2
+
+	-----------------------------------------------------------------------
+	1.1		Added a new mkenv.sh for Caldera Linux 7.0
+			
+
+	-----------------------------------------------------------------------
+	1.0		Initial release
+			Freshmeat Announcement
+
+	-----------------------------------------------------------------------
+
+
+Enjoy it,
+
+Juan M. Casillas
+juanm.casillas@eresmas.com

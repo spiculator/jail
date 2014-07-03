@@ -1,0 +1,185 @@
+# ----------------------------------------------------------------------------
+#
+# FreeBSD functions
+#
+# $Id: functions,v 1.1.1.1 2001/10/26 09:36:09 assman Exp $
+#
+# $Log: functions,v $
+# Revision 1.1.1.1  2001/10/26 09:36:09  assman
+# Added support for new platforms: FreeBSD, Solaris, IRIX. Now some options
+# can be selected from the Makefile script: DEBUG on/off, install path,
+# install permissions, etc. The perl scripts have been rewritten so they
+# support platform-specific code, so port Jail to another platform should
+# be an easy task.
+#
+#
+# ----------------------------------------------------------------------------
+
+undef &gen_template_password;
+undef &gen_passwd_user;
+
+*gen_template_password = \&gen_template_password_freeBSD;
+*gen_passwd_user = \&gen_passwd_user_freeBSD;
+
+
+# -----------------------------------------------------------------------------
+#
+# gen_template_password_freeBSD($base_dir)
+# this function generates the default template passwd, group and shadow
+# files under the chrooted environment
+#
+# -----------------------------------------------------------------------------
+
+sub gen_template_password_freeBSD {
+ local ($basedir) = @_;
+
+ local $pass_file = "${basedir}$PASSWD_FILE";
+ local $grp_file = "${basedir}$GROUP_FILE";
+
+ #
+ # Process Passwd File
+ #
+
+ open(PASS,$PASSWD_FILE) || die("Can't open $PASSWD_FILE: $!");
+ open(C_PASS,">".$pass_file) || die("Can't open $pass_file: $!");
+
+ while (<PASS>) {
+   foreach $i (@PASSWD_USERS) {
+     #
+     # if matched, send it to the right file
+     #
+     if (/^$i:/) {
+       print C_PASS $_;
+     }
+   }
+ }
+
+ close(PASS);
+ close(C_PASS);
+
+ #
+ # Process group file
+ #
+
+ open(GRP,$GROUP_FILE) || die("Can't open $GROUP_FILE: $!");
+ open(C_GRP,">".$grp_file) || die("Can't open $grp_file: $!");
+
+ while (<GRP>) {
+   foreach $i (@GROUP_USERS) {
+     #
+     # if matched, send it to the right file
+     #
+     if (/^$i:/) {
+       print C_GRP $_;
+     }
+   }
+ }
+
+ close(GRP);
+ close(C_GRP);
+
+ #
+ # do the things with the master password, to regenerate all the directories
+ #
+ 
+ local $cmd = build_cmd("pwd_mkdb");
+ if (!$cmd) {
+   $DEBUG && print("can't build command pwd_mkdb.\n");
+   return();
+ }
+
+ local $query = "$cmd -p -d $basedir/etc $basedir/etc/master.passwd";
+ local $res = `$query`;
+
+}
+
+
+# -----------------------------------------------------------------------------
+#
+# gen_passwd_user_freeBSD(basedir,userid,userhome,usershell)
+# generate the user directory inside de chrooted environment
+#
+# -----------------------------------------------------------------------------
+
+sub gen_passwd_user_freeBSD {
+
+ local ($basedir,$userid,$userhome,$usershell) = @_;
+
+ local $pass_file = "${basedir}$PASSWD_FILE";
+ local $grp_file =  "${basedir}$GROUP_FILE";
+
+ #
+ # edit the passwd file
+ #
+
+ local $entry = get_entry_from_pass_file($PASSWD_FILE,$userid);
+ if (!$entry) {
+   $DEBUG && print("Can't found password info for user $userid");
+   return();
+ }
+
+
+ @values = split(/:/,$entry);
+ $values[8] = $userhome;
+ $values[9] = $usershell;
+
+ $user_uid = $values[2];
+ $user_gid = $values[3];
+ 
+ $entry2 = join(':',@values)."\n";
+
+ if (!add_line_to_file($pass_file,$entry2)) {
+   $DEBUG && print("Can't add password info to file $pass_file");
+   return();
+ }
+
+ #
+ # build the group file
+ #
+
+ $entry = get_entry_from_group_file($GROUP_FILE,$user_gid);
+ if (!$entry) {
+   $DEBUG && print("Can't found group info for group $userid");
+   return();
+ }
+
+ if (!add_line_to_file($grp_file,$entry)) {
+   $DEBUG && print("Can't add group info to file $grp_file");
+   return();
+ }
+
+ #
+ # build the master password 
+ #
+
+ local $cmd = build_cmd("pwd_mkdb");
+ if (!$cmd) {
+   $DEBUG && print("can't build command pwd_mkdb.\n");
+   return();
+ }
+
+ local $query= "$cmd -p -u $userid -d $basedir/etc $basedir/etc/master.passwd";
+ local $res = `$query`;
+
+ #
+ # generate home directory
+ # and change its permissions
+ #
+
+ if (!mkdir_recursive("$basedir/$userhome",$CREATE_DIR_MASK)) {
+   $DEBUG && print("Can't create directory $basedir/$userhome");
+   return();
+ }
+
+ if (!chown($user_uid, $user_gid, "$basedir/$userhome")) {
+   $DEBUG && print("Can't chown($user_uid,$user_gid) in $basedir/$userhome");
+   return();
+ }
+
+ return(1);
+ 
+}
+
+
+1;
+
