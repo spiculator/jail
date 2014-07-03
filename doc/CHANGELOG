@@ -7,6 +7,10 @@ Current version: 1.9
 
 	VERSION HISTORY
 	-----------------------------------------------------------------------
+	2.0		Forked to make new maintained upstream:
+			https://github.com/spiculator/jail
+			Fixed security issue.
+
         1.9		Linux, Solaris, FreeBSD and IRIX platforms are fully
 			supported. The perl scripts have been redesigned, so
 			a new modular architecture has been adopted. Now, port

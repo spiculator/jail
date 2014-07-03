@@ -1,8 +1,11 @@
-Jail v1.9
+Jail v2.0
 A kick and dirty chrooted login implementation
 Released under GNU Public License v 2.0
 
 Juan M. Casillas <assman@gsyc.inf.uc3m.es>
+
+Maintained by Sergey Redin <spiculator@gmail.com>
+https://github.com/spiculator/jail
 
 INSTALL INSTRUCTIONS
 

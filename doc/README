@@ -1,9 +1,11 @@
-Jail v1.9
+Jail v2.0
 A kick and dirty chrooted login shell implementation
 Released under GNU Public License v 2.0
 
 Juan M. Casillas <assman@gsyc.inf.uc3m.es>
 
+Maintained by Sergey Redin <spiculator@gmail.com>
+https://github.com/spiculator/jail
 
 INTRODUCTION
 
@@ -39,7 +41,7 @@ BUGS
 
 RELEASE
 
-	This version is 1.9 release. Currently pretty stable.
+	This version is 2.0 release. Currently pretty stable.
 	The developement was done under a Linux box using debian potato 2.2
 	and gcc 2.95.3. 
 
