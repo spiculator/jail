@@ -445,8 +445,14 @@ int main(int argc, char *argv[], char *env[]) {
     // call the shell overriding current process space
     //
 
-    setgid(gid);
-    setuid(uid);
+    if( 0 != setgid(gid) ) {
+        perror("setgid");
+        exit(EXIT_FAILURE);
+    }
+    if( 0 != setuid(uid) ) {
+        perror("setuid");
+        exit(EXIT_FAILURE);
+    }
 
     #if DEBUG != 0
     fprintf(stderr,"jail: doing chdir(%s)\n",ptr_home_dir);
