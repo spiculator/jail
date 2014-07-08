@@ -342,7 +342,7 @@ int main(int argc, char *argv[], char *env[]) {
 
     if (cpwdent == NULL) {
 	fprintf(stderr,
-		"jail: chrooted directory %s is not configured"
+		"jail: chrooted directory %s is not configured "
 		"for jail (bad passwd file); bailing out.\n",
 		pwdent->dir);
 	return(-2);
